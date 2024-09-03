@@ -38,16 +38,16 @@ export const login = (req, res) => {
   });
 };
 
-export const logout = (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      console.error(e);
-      return res.status(500).json({ error: "Failed to log out" });
-    }
-    console.log("Logout Successful");
-    return res.json({ message: "Logout successful" });
-  });
-};
+// export const logout = (req, res) => {
+//   req.session.destroy((err) => {
+//     if (err) {
+//       console.error(e);
+//       return res.status(500).json({ error: "Failed to log out" });
+//     }
+//     console.log("Logout Successful");
+//     return res.json({ message: "Logout successful" });
+//   });
+// };
 
 export const createUser = (req, res) => {
   const q = "insert into users (`email`, `password`) values (?);";
