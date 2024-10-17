@@ -1,24 +1,16 @@
-import mysql2 from "mysql2";
-import dotenv from "dotenv";
+// import { Client } from "@neonhq/neon-postgres";
 
-dotenv.config();
+// const client = new Client({
+//   connectionString: process.env.DATABASE,
+// });
 
-const db = mysql2.createConnection({
-  host: process.env.HOST,
-  user: process.env.USER,
-  password: process.env.PASSWORD,
-  database: process.env.DATABASE,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+// client
+//   .connect()
+//   .then(() => {
+//     console.log("Connected to the database.");
+//   })
+//   .catch((err) => {
+//     console.error("Error connecting   to the database:", err.message);
+//   });
 
-db.connect((err) => {
-  if (err) {
-    console.error("Error connecting to the database:", err.message);
-    return;
-  }
-  console.log("Connected to the database.");
-});
-
-export default db;
+// export default client;

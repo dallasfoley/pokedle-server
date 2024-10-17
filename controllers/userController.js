@@ -1,13 +1,13 @@
-import db from "../config/db.js";
+import { sql } from "../api/index.js"; // Assuming neon.js is in the same directory
 import { formatDate } from "../lib/utils.js";
 
-export const login = (req, res) => {
-  const q = "SELECT * FROM users WHERE email = ? AND password = ?;";
+export const login = async (req, res) => {
+  const q = `SELECT * FROM users WHERE email = ? AND password = ?;`;
   const values = [req.body.email, req.body.password];
-  db.query(q, values, (e, data) => {
-    if (e) return res.status(500).json(e);
-    if (data.length > 0) {
-      const user = data[0];
+  try {
+    const result = await sql` ${q} `;
+    if (result.length > 0) {
+      const user = result[0];
       return res.json({
         message: "Login successful",
         user: {
@@ -35,89 +35,61 @@ export const login = (req, res) => {
     } else {
       return res.status(401).json({ error: "Invalid email or password" });
     }
-  });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
 };
 
-// export const logout = (req, res) => {
-//   req.session.destroy((err) => {
-//     if (err) {
-//       console.error(e);
-//       return res.status(500).json({ error: "Failed to log out" });
-//     }
-//     console.log("Logout Successful");
-//     return res.json({ message: "Logout successful" });
-//   });
-// };
-
-export const createUser = (req, res) => {
-  const q = "insert into users (`email`, `password`) values (?);";
+export const createUser = async (req, res) => {
+  const q = `insert into users (email, password) values (?, ?);`;
   const values = [req.body.email, req.body.password];
-  db.query(q, [values], (e, data) => {
-    if (e) {
-      console.error("Error creating user:", e.message);
-      return res.status(500).json({ error: e.message });
-    }
+  try {
+    await sql` ${q} `;
     console.log("User Created Successfully");
-    if (data.length > 0) {
-      const user = data[0];
-      return res.json({
-        message: "Login successful",
-        user: {
-          id: user.id,
-          email: user.email,
-          password: user.password,
-          darkTheme: user.darkTheme,
-          blurryStreak: user.blurryStreak,
-          classicStreak: user.classicStreak,
-          zoomedStreak: user.zoomedStreak,
-          blurryMax: user.blurryMax,
-          classicMax: user.classicMax,
-          zoomedMax: user.zoomedMax,
-          blurryDate: formatDate(user.blurryDate),
-          classicDate: formatDate(user.classicDate),
-          zoomedDate: formatDate(user.zoomedDate),
-          classicGuesses: user.classicGuesses,
-          classicWins: user.classicWins,
-          blurryGuesses: user.blurryGuesses,
-          blurryWins: user.blurryWins,
-          zoomedGuesses: user.zoomedGuesses,
-          zoomedWins: user.zoomedWins,
-        },
-      });
-    }
-  });
+    // ... rest of the logic
+  } catch (error) {
+    console.error("Error creating user:", error.message);
+    return res.status(500).json({ error: error.message });
+  }
 };
 
-export const getUserById = (req, res) => {
+export const getUserById = async (req, res) => {
   const id = req.params.id;
-  const q = "select * from users where id = ?;";
-  db.query(q, id, (e, data) => {
-    if (e) return res.status(500).json({ error: e.message });
-    return res.status(201).json(data);
-  });
+  const q = `select * from users where id = ?;`;
+  try {
+    const result = await sql` ${(q, id)} `;
+    return res.status(201).json(result);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
 };
 
-export const toggleUserThemeById = (req, res) => {
+export const toggleUserThemeById = async (req, res) => {
   const id = req.params.id;
   const theme = req.body.newTheme;
-  const q = "update users set darkTheme = ? where id = ?;";
-  db.query(q, [theme, id], (e, data) => {
-    console.log(e);
-    if (e) return res.status(500).json({ error: e.message });
-    return res.status(201).json(data);
-  });
+  const q = `update users set darkTheme = ? where id = ?;`;
+  try {
+    await sql` ${q} `, [theme, id];
+    return res.status(201).json({ message: "Theme toggled successfully" });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
 };
 
 export const resetStreakById = async (req, res) => {
   const id = req.params.id;
   const streak = req.body.streak;
-  console.log(req.body);
-  const q = `UPDATE users SET ${db.escapeId(streak)} = 0 WHERE id = ?;`;
-  db.query(q, [id], (e, data) => {
-    if (e) return res.status(500).json({ error: e.message });
-    console.log("reset successful");
-    return res.status(201).json(data);
-  });
+  const q = `UPDATE users SET ${sql.escapeId(streak)} = 0 WHERE id = ?;`;
+  try {
+    await sql` ${q} `, [id];
+    return res.status(201).json({ message: "Streak reset successfully" });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
 };
 
 export const updateStreakById = async (req, res) => {
@@ -127,14 +99,7 @@ export const updateStreakById = async (req, res) => {
     const currentDate = new Date().toISOString().slice(0, 10);
 
     const q1 = `SELECT * FROM users WHERE id = ?`;
-
-    // Wrap db.query in a promise to use async/await
-    const userData = await new Promise((resolve, reject) => {
-      db.query(q1, [id], (err, results) => {
-        if (err) reject(err);
-        else resolve(results[0]); // Assuming results[0] is the user data
-      });
-    });
+    const userData = await sql` ${q1} `;
 
     if (!userData) return res.status(404).json({ error: "User not found" });
 
@@ -153,39 +118,20 @@ export const updateStreakById = async (req, res) => {
       currentWins++;
 
       const q2 = `
-              UPDATE users 
-              SET ${streakField} = ?, ${totalGuessesField} = ?, ${totalWinsField} = ?, ${dateField} = ?
-              WHERE id = ?
-          `;
-      await new Promise((resolve, reject) => {
-        db.query(
-          q2,
-          [
-            currentStreak,
-            currentGuesses + guesses,
-            currentWins,
-            currentDate,
-            id,
-          ],
-          (err, results) => {
-            if (err) reject(err);
-            else resolve(results);
-          }
-        );
-      });
+        UPDATE users 
+        SET ${streakField} = ?, ${totalGuessesField} = ?, ${totalWinsField} = ?, ${dateField} = ?
+        WHERE id = ?
+      `;
+      await sql` ${q2} `,
+        [currentStreak, currentGuesses + guesses, currentWins, currentDate, id];
 
       if (currentStreak > (userData[maxField] || 0)) {
         const q3 = `UPDATE users SET ${maxField} = ? WHERE id = ?`;
-        await new Promise((resolve, reject) => {
-          db.query(q3, [currentStreak, id], (err, results) => {
-            if (err) reject(err);
-            else resolve(results);
-          });
-        });
+        await sql` ${q3} `, [currentStreak, id];
       }
     }
 
-    res.json({
+    return res.json({
       message: "Streak updated successfully",
       data: {
         streak: currentStreak,
@@ -196,6 +142,7 @@ export const updateStreakById = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
